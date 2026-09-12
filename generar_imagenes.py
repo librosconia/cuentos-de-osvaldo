@@ -14,14 +14,30 @@ import urllib.request
 import urllib.error
 
 BASE_URL = "https://image.pollinations.ai/prompt/"
+TOKEN = os.environ.get("POLLINATIONS_TOKEN", "")
+IMAGEN_REFERENCIA_OSVALDO = (
+    "https://raw.githubusercontent.com/librosconia/cuentos-de-osvaldo/main/osvaldo_referencia.png"
+)
 
 
-def generar_imagen(prompt, ruta_salida, intentos=3):
+def generar_imagen(prompt, ruta_salida, tipo, intentos=3):
     prompt_codificado = urllib.parse.quote(prompt)
-    url = (
-        f"{BASE_URL}{prompt_codificado}"
-        "?width=1024&height=1024&nologo=true&model=flux"
-    )
+    if tipo == "narrador":
+        # Kontext genera a partir de la imagen de referencia, para que Osvaldo
+        # se vea siempre igual en lugar de que la IA se lo invente cada vez.
+        imagen_ref_codificada = urllib.parse.quote(IMAGEN_REFERENCIA_OSVALDO, safe="")
+        url = (
+            f"{BASE_URL}{prompt_codificado}"
+            f"?width=1024&height=1024&nologo=true&model=kontext"
+            f"&image={imagen_ref_codificada}&enhance=false"
+        )
+    else:
+        url = (
+            f"{BASE_URL}{prompt_codificado}"
+            "?width=1024&height=1024&nologo=true&model=flux&enhance=false"
+        )
+    if TOKEN:
+        url += f"&token={TOKEN}"
     for intento in range(1, intentos + 1):
         try:
             req = urllib.request.Request(
@@ -52,7 +68,7 @@ def main():
     for i, fragmento in enumerate(historia["fragmentos"], start=1):
         ruta = f"imagenes/imagen_{i:03d}.png"
         print(f"Generando {ruta} ({fragmento['tipo']})...")
-        generar_imagen(fragmento["prompt_imagen"], ruta)
+        generar_imagen(fragmento["prompt_imagen"], ruta, fragmento["tipo"])
         time.sleep(16)  # Pollinations limita a 1 petición cada 15 segundos
 
     print(f"Listo: {len(historia['fragmentos'])} imágenes generadas en imagenes/")
