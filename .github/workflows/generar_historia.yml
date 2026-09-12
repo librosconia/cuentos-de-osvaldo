@@ -20,8 +20,19 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python generar_historia.py
 
-      - name: Guardar resultado como descarga
+      - name: Generar las imágenes
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python generar_imagenes.py
+
+      - name: Guardar historia como descarga
         uses: actions/upload-artifact@v4
         with:
           name: historia_generada
           path: historia_generada.json
+
+      - name: Guardar imágenes como descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: imagenes_generadas
+          path: imagenes/
