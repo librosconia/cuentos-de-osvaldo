@@ -58,7 +58,7 @@ con esta forma exacta:
 def main():
     body = {
         "contents": [{"parts": [{"text": PROMPT}]}],
-        "generationConfig": {"maxOutputTokens": 8192},
+        "generationConfig": {"maxOutputTokens": 16384},
     }
     req = urllib.request.Request(
         URL,
@@ -84,7 +84,7 @@ def main():
     # Por si el modelo añade ```json ... ``` a pesar de la instrucción
     texto_limpio = re.sub(r"^```json\s*|\s*```$", "", texto.strip())
 
-    historia = json.loads(texto_limpio)
+    historia = json.loads(texto_limpio, strict=False)
 
     with open("historia_generada.json", "w", encoding="utf-8") as f:
         json.dump(historia, f, ensure_ascii=False, indent=2)
