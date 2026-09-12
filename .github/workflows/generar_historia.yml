@@ -1,0 +1,27 @@
+name: Generar historia
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generar la historia
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python generar_historia.py
+
+      - name: Guardar resultado como descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: historia_generada
+          path: historia_generada.json
