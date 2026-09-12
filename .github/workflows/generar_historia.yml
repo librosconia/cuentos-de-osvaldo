@@ -22,7 +22,7 @@ jobs:
 
       - name: Generar las imágenes
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          POLLINATIONS_TOKEN: ${{ secrets.POLLINATIONS_TOKEN }}
         run: python generar_imagenes.py
 
       - name: Guardar historia como descarga
