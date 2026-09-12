@@ -17,7 +17,7 @@ API_KEY = os.environ.get("GEMINI_API_KEY")
 if not API_KEY:
     raise SystemExit("Falta la variable de entorno GEMINI_API_KEY")
 
-MODEL = "gemini-2.0-flash"
+MODEL = "gemini-3.6-flash"
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
 
 PROMPT = """
@@ -58,7 +58,7 @@ con esta forma exacta:
 def main():
     body = {
         "contents": [{"parts": [{"text": PROMPT}]}],
-        "generationConfig": {"temperature": 1.0, "maxOutputTokens": 8192},
+        "generationConfig": {"maxOutputTokens": 8192},
     }
     req = urllib.request.Request(
         URL,
