@@ -74,7 +74,12 @@ def main():
         print(e.read().decode("utf-8"))
         raise
 
-    texto = data["candidates"][0]["content"]["parts"][0]["text"]
+    try:
+        texto = data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError):
+        print("Respuesta inesperada de Gemini, contenido completo:")
+        print(json.dumps(data, ensure_ascii=False, indent=2))
+        raise
 
     # Por si el modelo añade ```json ... ``` a pesar de la instrucción
     texto_limpio = re.sub(r"^```json\s*|\s*```$", "", texto.strip())
