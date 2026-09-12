@@ -54,9 +54,9 @@ def generar_imagen(prompt, ruta_salida, tipo, intentos=3):
                 f.write(resp.read())
             return
         except urllib.error.HTTPError as e:
-            print(f"  intento {intento} fallido ({e.code}), reintentando...")
+            detalle = e.read().decode("utf-8", errors="replace")
+            print(f"  intento {intento} fallido ({e.code}): {detalle[:500]}")
             time.sleep(20)
-    raise RuntimeError(f"No se pudo generar la imagen para: {ruta_salida}")
 
 
 def main():
