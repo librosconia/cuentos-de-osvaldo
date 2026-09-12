@@ -11,6 +11,7 @@ import os
 import json
 import re
 import urllib.request
+import urllib.error
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
 if not API_KEY:
@@ -65,8 +66,13 @@ def main():
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        print("ERROR de la API de Gemini:")
+        print(e.read().decode("utf-8"))
+        raise
 
     texto = data["candidates"][0]["content"]["parts"][0]["text"]
 
