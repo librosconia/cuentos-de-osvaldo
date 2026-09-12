@@ -58,7 +58,32 @@ con esta forma exacta:
 def main():
     body = {
         "contents": [{"parts": [{"text": PROMPT}]}],
-        "generationConfig": {"maxOutputTokens": 16384},
+        "generationConfig": {
+            "maxOutputTokens": 16384,
+            "responseMimeType": "application/json",
+            "responseSchema": {
+                "type": "OBJECT",
+                "properties": {
+                    "titulo": {"type": "STRING"},
+                    "fragmentos": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "texto": {"type": "STRING"},
+                                "tipo": {
+                                    "type": "STRING",
+                                    "enum": ["narrador", "escena"],
+                                },
+                                "prompt_imagen": {"type": "STRING"},
+                            },
+                            "required": ["texto", "tipo", "prompt_imagen"],
+                        },
+                    },
+                },
+                "required": ["titulo", "fragmentos"],
+            },
+        },
     }
     req = urllib.request.Request(
         URL,
