@@ -29,15 +29,21 @@ if not TOKEN:
     raise SystemExit("Falta la variable de entorno POLLINATIONS_TOKEN")
 
 
-def generar_imagen(prompt, ruta_salida, tipo, intentos=3):
-    prompt_codificado = urllib.parse.quote(prompt)
+def generar_imagen(prompt, ruta_salida, tipo, intentos=5):
     if tipo == "narrador":
+        prompt_final = (
+            "Manteniendo exactamente la misma cara, pelo y ropa del personaje "
+            "de la imagen de referencia (Osvaldo, sin cambiar sus rasgos faciales): "
+            + prompt
+        )
+        prompt_codificado = urllib.parse.quote(prompt_final)
         imagen_ref_codificada = urllib.parse.quote(IMAGEN_REFERENCIA_OSVALDO, safe="")
         url = (
             f"{BASE_URL}{prompt_codificado}"
-            f"?model=kontext&image={imagen_ref_codificada}&width=1024&height=1024"
+            f"?model=kontext&image={imagen_ref_codificada}&aspect_ratio=1:1"
         )
     else:
+        prompt_codificado = urllib.parse.quote(prompt)
         url = f"{BASE_URL}{prompt_codificado}?model=flux&width=1024&height=1024"
 
     for intento in range(1, intentos + 1):
@@ -59,7 +65,7 @@ def generar_imagen(prompt, ruta_salida, tipo, intentos=3):
         except urllib.error.HTTPError as e:
             detalle = e.read().decode("utf-8", errors="replace")
             print(f"  intento {intento} fallido ({e.code}): {detalle[:500]}")
-            time.sleep(15)
+            time.sleep(20)
     raise RuntimeError(f"No se pudo generar la imagen para: {ruta_salida}")
 
 
