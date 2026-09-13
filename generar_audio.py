@@ -28,7 +28,14 @@ def generar_audio(texto, ruta_salida, intentos=3):
         try:
             req = urllib.request.Request(
                 url,
-                headers={"Authorization": f"Bearer {TOKEN}"},
+                headers={
+                    "Authorization": f"Bearer {TOKEN}",
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/124.0 Safari/537.36"
+                    ),
+                },
             )
             with urllib.request.urlopen(req) as resp, open(ruta_salida, "wb") as f:
                 f.write(resp.read())
