@@ -30,7 +30,16 @@ jobs:
         with:
           name: historia_generada
           path: historia_generada.json
+      - name: Generar el audio
+        env:
+          POLLINATIONS_TOKEN: ${{ secrets.POLLINATIONS_TOKEN }}
+        run: python generar_audio.py
 
+      - name: Guardar audio como descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio_generado
+          path: audio/
       - name: Guardar imágenes como descarga
         uses: actions/upload-artifact@v4
         with:
