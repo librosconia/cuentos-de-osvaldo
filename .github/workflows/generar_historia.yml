@@ -30,9 +30,11 @@ jobs:
         with:
           name: historia_generada
           path: historia_generada.json
+      
+      - name: Instalar edge-tts
+        run: pip install edge-tts
+
       - name: Generar el audio
-        env:
-          POLLINATIONS_TOKEN: ${{ secrets.POLLINATIONS_TOKEN }}
         run: python generar_audio.py
 
       - name: Guardar audio como descarga
