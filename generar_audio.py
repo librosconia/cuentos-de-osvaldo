@@ -1,8 +1,8 @@
 """
 Lee historia_generada.json y genera un archivo de audio (voz de Osvaldo)
-por cada fragmento, usando la voz "onyx" de Pollinations (gen.pollinations.ai).
+por cada fragmento, usando la voz "onyx" de Pollinations (text.pollinations.ai).
 
-Necesita la variable de entorno POLLINATIONS_TOKEN.
+Vía gratuita, sin necesidad de clave ni saldo.
 Guarda los audios en la carpeta audio/ como audio_001.mp3, audio_002.mp3, etc.
 """
 
@@ -13,23 +13,18 @@ import urllib.parse
 import urllib.request
 import urllib.error
 
-BASE_URL = "https://gen.pollinations.ai/audio/"
-TOKEN = os.environ.get("POLLINATIONS_TOKEN", "")
+BASE_URL = "https://text.pollinations.ai/"
 VOZ = "onyx"
-
-if not TOKEN:
-    raise SystemExit("Falta la variable de entorno POLLINATIONS_TOKEN")
 
 
 def generar_audio(texto, ruta_salida, intentos=3):
     texto_codificado = urllib.parse.quote(texto)
-    url = f"{BASE_URL}{texto_codificado}?voice={VOZ}"
+    url = f"{BASE_URL}{texto_codificado}?model=openai-audio&voice={VOZ}"
     for intento in range(1, intentos + 1):
         try:
             req = urllib.request.Request(
                 url,
                 headers={
-                    "Authorization": f"Bearer {TOKEN}",
                     "User-Agent": (
                         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                         "AppleWebKit/537.36 (KHTML, like Gecko) "
