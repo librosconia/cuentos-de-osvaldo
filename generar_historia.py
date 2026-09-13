@@ -1,121 +1,89 @@
 """
-Genera una historia de terror inventada junto con una lista de "momentos clave":
-puntos del guion donde debe cambiar la imagen, indicando si es el narrador
-(Osvaldo) o una escena de la propia historia, con una descripción de esa imagen.
+Lee historia_generada.json (creado por generar_historia.py) y genera una imagen
+por cada fragmento, usando el "prompt_imagen" de cada uno.
 
-Necesita una variable de entorno GEMINI_API_KEY (clave gratuita de Google AI Studio).
-Guarda el resultado en historia_generada.json
+Usa la puerta de enlace gen.pollinations.ai, autenticada con la clave gratuita
+de Pollinations (variable de entorno POLLINATIONS_TOKEN).
+
+Los fragmentos de tipo "narrador" usan el modelo Kontext junto con la imagen
+de referencia de Osvaldo, para que su cara se mantenga siempre igual.
+Los fragmentos de tipo "escena" usan el modelo Flux normal (solo texto).
+
+Guarda las imágenes en la carpeta imagenes/ como imagen_001.png, imagen_002.png, etc.
 """
 
-import os
 import json
-import re
+import os
+import time
+import urllib.parse
 import urllib.request
 import urllib.error
 
-API_KEY = os.environ.get("GEMINI_API_KEY")
-if not API_KEY:
-    raise SystemExit("Falta la variable de entorno GEMINI_API_KEY")
+BASE_URL = "https://gen.pollinations.ai/image/"
+TOKEN = os.environ.get("POLLINATIONS_TOKEN", "")
+IMAGEN_REFERENCIA_OSVALDO = (
+    "https://raw.githubusercontent.com/librosconia/cuentos-de-osvaldo/main/osvaldo_referencia.png"
+)
 
-MODEL = "gemini-3.6-flash"
-URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
+if not TOKEN:
+    raise SystemExit("Falta la variable de entorno POLLINATIONS_TOKEN")
 
-PROMPT = """
-Eres el guionista del canal de YouTube de terror "Cuentos de Osvaldo".
-El narrador es Osvaldo: un anciano contador de historias, siniestro y con humor negro,
-de pelo blanco despeinado, gorra marrón, ojos claros casi blancos, sonrisa torcida,
-chaqueta marrón remendada, chaleco verde, pañuelo al cuello.
 
-Tarea:
-1. Escribe una historia de terror ORIGINAL e INVENTADA (no un relato conocido),
-   pensada para ser narrada en voz alta durante unos 18-20 minutos (aprox 2500-3000 palabras).
-   Debe tener tono siniestro con toques de humor negro, propio de Osvaldo.
-2. Divide esa narración en fragmentos de forma natural (por escenas o giros de la historia).
-3. Para cada fragmento, decide qué imagen debe mostrarse mientras se narra:
-   - tipo "narrador": Osvaldo contando esa parte, en un lugar y con una expresión
-     acorde al momento de la historia. El lugar y la expresión deben variar entre
-     fragmentos, no repetir siempre el mismo.
-   - tipo "escena": una ilustración de lo que ocurre en la historia en ese momento
-     (el monstruo, el lugar, el personaje, el objeto siniestro, etc.), sin que
-     aparezca Osvaldo.
+def generar_imagen(prompt, ruta_salida, tipo, intentos=3):
+    prompt_codificado = urllib.parse.quote(prompt)
+    if tipo == "narrador":
+        imagen_ref_codificada = urllib.parse.quote(IMAGEN_REFERENCIA_OSVALDO, safe="")
+        url = (
+            f"{BASE_URL}{prompt_codificado}"
+            f"?model=kontext&image={imagen_ref_codificada}&width=1024&height=1024"
+        )
+    else:
+        url = f"{BASE_URL}{prompt_codificado}?model=flux&width=1024&height=1024"
 
-Responde ÚNICAMENTE con un JSON válido, sin texto adicional ni marcado de código,
-con esta forma exacta:
-
-{
-  "titulo": "string",
-  "fragmentos": [
-    {
-      "texto": "fragmento del guion a narrar",
-      "tipo": "narrador" o "escena",
-      "prompt_imagen": "descripción detallada en español para generar la imagen, coherente con el estilo: ilustración plana, líneas negras definidas, colores apagados (marrones, verdes, grises oscuros), sin sombreado realista"
-    }
-  ]
-}
-"""
+    for intento in range(1, intentos + 1):
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "Authorization": f"Bearer {TOKEN}",
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/124.0 Safari/537.36"
+                    ),
+                },
+            )
+            with urllib.request.urlopen(req) as resp, open(ruta_salida, "wb") as f:
+                f.write(resp.read())
+            return
+        except urllib.error.HTTPError as e:
+            detalle = e.read().decode("utf-8", errors="replace")
+            print(f"  intento {intento} fallido ({e.code}): {detalle[:500]}")
+            time.sleep(15)
+    raise RuntimeError(f"No se pudo generar la imagen para: {ruta_salida}")
 
 
 def main():
-    body = {
-        "contents": [{"parts": [{"text": PROMPT}]}],
-        "generationConfig": {
-            "maxOutputTokens": 16384,
-            "responseMimeType": "application/json",
-            "responseSchema": {
-                "type": "OBJECT",
-                "properties": {
-                    "titulo": {"type": "STRING"},
-                    "fragmentos": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "texto": {"type": "STRING"},
-                                "tipo": {
-                                    "type": "STRING",
-                                    "enum": ["narrador", "escena"],
-                                },
-                                "prompt_imagen": {"type": "STRING"},
-                            },
-                            "required": ["texto", "tipo", "prompt_imagen"],
-                        },
-                    },
-                },
-                "required": ["titulo", "fragmentos"],
-            },
-        },
-    }
-    req = urllib.request.Request(
-        URL,
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        print("ERROR de la API de Gemini:")
-        print(e.read().decode("utf-8"))
-        raise
+    with open("historia_generada.json", "r", encoding="utf-8") as f:
+        historia = json.load(f)
 
-    try:
-        texto = data["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError):
-        print("Respuesta inesperada de Gemini, contenido completo:")
-        print(json.dumps(data, ensure_ascii=False, indent=2))
-        raise
+    os.makedirs("imagenes", exist_ok=True)
 
-    # Por si el modelo añade ```json ... ``` a pesar de la instrucción
-    texto_limpio = re.sub(r"^```json\s*|\s*```$", "", texto.strip())
+    fallos = []
+    for i, fragmento in enumerate(historia["fragmentos"], start=1):
+        ruta = f"imagenes/imagen_{i:03d}.png"
+        print(f"Generando {ruta} ({fragmento['tipo']})...")
+        try:
+            generar_imagen(fragmento["prompt_imagen"], ruta, fragmento["tipo"])
+        except RuntimeError as e:
+            print(f"  SALTADA: {e}")
+            fallos.append(ruta)
+        time.sleep(3)
 
-    historia = json.loads(texto_limpio, strict=False)
-
-    with open("historia_generada.json", "w", encoding="utf-8") as f:
-        json.dump(historia, f, ensure_ascii=False, indent=2)
-
-    print(f"Historia generada: {historia['titulo']}")
-    print(f"Fragmentos: {len(historia['fragmentos'])}")
+    total = len(historia["fragmentos"])
+    print(f"Listo: {total - len(fallos)}/{total} imágenes generadas en imagenes/")
+    if fallos:
+        print(f"Fallaron: {fallos}")
 
 
 if __name__ == "__main__":
