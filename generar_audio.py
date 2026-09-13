@@ -1,48 +1,26 @@
 """
 Lee historia_generada.json y genera un archivo de audio (voz de Osvaldo)
-por cada fragmento, usando la voz "onyx" de Pollinations (text.pollinations.ai).
+por cada fragmento, usando edge-tts (motor de voz de Microsoft Edge),
+que es gratis, no necesita clave ni cuenta.
 
-Vía gratuita, sin necesidad de clave ni saldo.
 Guarda los audios en la carpeta audio/ como audio_001.mp3, audio_002.mp3, etc.
 """
 
+import asyncio
 import json
 import os
-import time
-import urllib.parse
-import urllib.request
-import urllib.error
 
-BASE_URL = "https://text.pollinations.ai/"
-VOZ = "onyx"
+import edge_tts
+
+VOZ = "es-ES-AlvaroNeural"  # voz masculina en español de España
 
 
-def generar_audio(texto, ruta_salida, intentos=3):
-    texto_codificado = urllib.parse.quote(texto)
-    url = f"{BASE_URL}{texto_codificado}?model=openai-audio&voice={VOZ}"
-    for intento in range(1, intentos + 1):
-        try:
-            req = urllib.request.Request(
-                url,
-                headers={
-                    "User-Agent": (
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/124.0 Safari/537.36"
-                    ),
-                },
-            )
-            with urllib.request.urlopen(req) as resp, open(ruta_salida, "wb") as f:
-                f.write(resp.read())
-            return
-        except urllib.error.HTTPError as e:
-            detalle = e.read().decode("utf-8", errors="replace")
-            print(f"  intento {intento} fallido ({e.code}): {detalle[:300]}")
-            time.sleep(15)
-    raise RuntimeError(f"No se pudo generar el audio para: {ruta_salida}")
+async def generar_audio(texto, ruta_salida):
+    comunicador = edge_tts.Communicate(texto, voice=VOZ)
+    await comunicador.save(ruta_salida)
 
 
-def main():
+async def main():
     with open("historia_generada.json", "r", encoding="utf-8") as f:
         historia = json.load(f)
 
@@ -53,11 +31,10 @@ def main():
         ruta = f"audio/audio_{i:03d}.mp3"
         print(f"Generando {ruta}...")
         try:
-            generar_audio(fragmento["texto"], ruta)
-        except RuntimeError as e:
-            print(f"  SALTADO: {e}")
+            await generar_audio(fragmento["texto"], ruta)
+        except Exception as e:
+            print(f"  SALTADO ({e})")
             fallos.append(ruta)
-        time.sleep(3)
 
     total = len(historia["fragmentos"])
     print(f"Listo: {total - len(fallos)}/{total} audios generados en audio/")
@@ -66,4 +43,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
