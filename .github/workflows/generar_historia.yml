@@ -1,0 +1,58 @@
+name: Generar historia
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar edge-tts
+        run: pip install edge-tts
+
+      - name: Generar la historia
+        env:
+          OMNIROUTE_BASE_URL: ${{ secrets.OMNIROUTE_BASE_URL }}
+          OMNIROUTE_API_KEY: ${{ secrets.OMNIROUTE_API_KEY }}
+        run: python generar_historia.py
+
+      - name: Generar las imágenes
+        run: python generar_imagenes.py
+
+      - name: Generar el audio
+        run: python generar_audio.py
+
+      - name: Montar el vídeo final
+        run: python generar_video.py
+
+      - name: Guardar historia como descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: historia_generada
+          path: historia_generada.json
+
+      - name: Guardar imágenes como descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: imagenes_generadas
+          path: imagenes/
+
+      - name: Guardar audio como descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio_generado
+          path: audio/
+
+      - name: Guardar el vídeo final como descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: video_final
+          path: video_final.mp4
