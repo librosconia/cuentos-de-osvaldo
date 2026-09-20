@@ -3,9 +3,9 @@ Genera una historia de terror inventada junto con una lista de "momentos clave":
 puntos del guion donde debe cambiar la imagen, indicando si es el narrador
 (Osvaldo) o una escena de la propia historia, con una descripción de esa imagen.
 
-Llama a OmniRoute (gateway propio desplegado en Railway) en vez de a Gemini
-directamente, usando el combo "auto/best-free" que rota automáticamente
-entre varios modelos gratuitos si alguno falla.
+Llama a OmniRoute (gateway propio desplegado en Railway) usando tus propias
+cuentas conectadas (Gemini y Mistral), con fallback manual: si Gemini falla,
+prueba con Mistral.
 
 Necesita las variables de entorno:
   - OMNIROUTE_BASE_URL (ej: https://tu-proyecto.up.railway.app/v1)
@@ -23,7 +23,7 @@ import urllib.error
 
 BASE_URL = os.environ.get("OMNIROUTE_BASE_URL", "").rstrip("/")
 API_KEY = os.environ.get("OMNIROUTE_API_KEY")
-MODELO = "auto/best-free"
+MODELOS = ["gemini/gemini-3.7-flash", "mistral/mistral-medium-3.5"]
 
 if not BASE_URL:
     raise SystemExit("Falta la variable de entorno OMNIROUTE_BASE_URL")
@@ -69,9 +69,9 @@ con esta forma exacta:
 """
 
 
-def pedir_historia():
+def pedir_historia(modelo):
     body = {
-        "model": MODELO,
+        "model": modelo,
         "messages": [{"role": "user", "content": PROMPT}],
         "response_format": {"type": "json_object"},
         "max_tokens": 8000,
@@ -113,8 +113,9 @@ def pedir_historia():
 def main():
     historia = None
     for intento in range(1, 5 + 1):
-        print(f"Intento {intento} de generar la historia...")
-        historia = pedir_historia()
+        modelo = MODELOS[(intento - 1) % len(MODELOS)]
+        print(f"Intento {intento} de generar la historia (modelo: {modelo})...")
+        historia = pedir_historia(modelo)
         if historia and "fragmentos" in historia and historia["fragmentos"]:
             break
         historia = None
